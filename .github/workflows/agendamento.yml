@@ -1,20 +1,29 @@
 name: Report Pier 1
 on:
   schedule:
-    - cron: '0 10,16,22 * * *' # Equivale a 07h, 13h, 19h no horário de Brasília
-  workflow_dispatch: # Permite que você rode o teste manual
+    - cron: '0 10,16,22 * * *' # Horário UTC (Equivale a 07h, 13h, 19h no Brasil)
+  workflow_dispatch: # Botão para rodar manual
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+
+      - name: Install Google Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
       - name: Install Dependencies
-        run: pip install requests pandas lxml
+        run: |
+          pip install requests pandas lxml selenium webdriver-manager html5lib
+
       - name: Run Script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
