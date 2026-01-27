@@ -1,0 +1,22 @@
+name: Report Pier 1
+on:
+  schedule:
+    - cron: '0 10,16,22 * * *' # Equivale a 07h, 13h, 19h no horário de Brasília
+  workflow_dispatch: # Permite que você rode o teste manual
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install requests pandas lxml
+      - name: Run Script
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
