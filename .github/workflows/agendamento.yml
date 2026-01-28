@@ -1,56 +1,26 @@
-import requests
-import pandas as pd
-import os
+name: Report Pier 1
+on:
+  schedule:
+    - cron: '0 9-23,0-1 * * *'
+  workflow_dispatch:
 
-TOKEN = os.getenv('TELEGRAM_TOKEN')
-CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+jobs:
+  relatorio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
 
-def enviar_telegram(mensagem):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}&parse_mode=Markdown"
-    requests.get(url)
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-def executar():
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get("https://www.praticagem.org.br/manobras-previstas.html", headers=headers, timeout=20)
-        df = pd.read_html(res.text)[0]
-        
-        sul = df[df['Berço'].str.contains('TUBP1S', na=False, case=False)]
-        norte = df[df['Berço'].str.contains('TUBP1N', na=False, case=False)]
+      - name: Instalar Dependencias
+        run: pip install requests pandas lxml html5lib
 
-        def analisar_berco(dados, nome):
-            if dados.empty:
-                return f"⚓ *Berço {nome}:* 🟢 *LIVRE*\n📋 _Sem programação próxima._\n"
-
-            # Lógica corrigida: 
-            # Se a primeira manobra da lista for "SAÍDA", o navio está lá agora (OCUPADO).
-            # Se for "ENTRADA", o berço está vago aguardando o navio (LIVRE).
-            primeira_manobra = dados.iloc[0]['Manobra'].upper()
-            navio_atual = dados.iloc[0]['Navio']
-            
-            if "SAÍDA" in primeira_manobra or "SAIDA" in primeira_manobra:
-                status = f"🔴 *OCUPADO* (Navio: {navio_atual})"
-            else:
-                status = "🟢 *LIVRE*"
-
-            info = f"⚓ *Berço {nome}:* {status}\n"
-            
-            # Programação Futura (próximas linhas)
-            if len(dados) > 0:
-                info += "📋 _Prog. Futura:_\n"
-                for _, r in dados.head(3).iterrows():
-                    info += f"  • {r['Navio']} ({r['Manobra']})\n"
-            return info
-
-        report = "📋 *REPORT TÉCNICO - PIER 1*\n\n"
-        report += analisar_berco(sul, "SUL (P1S)")
-        report += "\n"
-        report += analisar_berco(norte, "NORTE (P1N)")
-        
-        enviar_telegram(report)
-
-    except Exception as e:
-        enviar_telegram(f"⚠️ *Erro na extração:* {str(e)}")
-
-if __name__ == "__main__":
-    executar()
+      - name: Executar Robo
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
